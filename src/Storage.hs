@@ -2,16 +2,50 @@ module Storage where
 
 import Data.ByteString as B
 import Data.Hashable
-import System.Posix.Files
+import System.Posix
+import Data.Bool.HT
+import Data.Function.Slip
 
-store :: FilePath -> B.ByteString -> IO ()
-store path content = store <> catalog
+type Bucket = String
+type ObjID = Int
+type Content = ByteString
+
+store :: Bucket -> ObjID -> B.ByteString -> IO ()
+store bucket obj content = if' <$> isDuplicate bucket content
+                                <*> store
+                                <*> pure ()
+                            <> ref
                 where
-                data_path = show . hash $ content
-                store = B.writeFile data_path content
-                catalog = createLink data_path path
+                obj_paths = path bucket obj
+                storage = data_path bucket content
+                obj_link = path
+                store = B.writeFile storage content
+                ref = createLink storage (obj_paths "/objects/")
+                      <> createSymbolicLink storage  (obj_paths "/refs/")
 
-retrieve = B.readFile
+retrieve :: Bucket -> ObjID -> IO ByteString
+retrieve = ((.) . (.)) B.readFile (slipl path "/objects/")
 
-delete :: FilePath -> IO ()
-delete = removeLink
+delete :: Bucket -> ObjID -> IO ()
+delete bucket obj = if' <$> ((>= 2) <$> exemplarOf bucket obj)
+                        <*> unstore
+                        <*> pure ()
+                       <> unref
+                where
+                obj_paths = path bucket obj
+                unref = removeLink (obj_paths "/objects/")
+                     <> removeLink (obj_paths "/refs/")
+                unstore = readSymbolicLink (obj_paths "/refs/")
+                      >>= removeLink
+
+data_path :: Bucket -> Content -> FilePath
+data_path bucket content = bucket <> "/store/" <> (show . hash) content
+
+exemplarOf :: Bucket -> ObjID -> IO LinkCount
+exemplarOf b i = fmap linkCount $ getFileStatus $ b <> "/refs/" <> show i
+
+isDuplicate :: Bucket -> Content -> IO Bool
+isDuplicate =  ((.) . (.)) fileExist data_path
+
+path ::  Bucket -> ObjID -> String -> FilePath
+path b obj what =  b <> what <> show obj

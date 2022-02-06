@@ -17,11 +17,13 @@ dependencies:
 - warp
 - bytestring
 - hashable < 2
+- composition-extra
 
 library:
   source-dirs: src
   dependencies:
     - unix
+    - utility-ht
 
 executables:
   object-store-exe:
