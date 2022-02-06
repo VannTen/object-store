@@ -3,6 +3,7 @@ module Storage where
 import Data.ByteString as B
 import Data.Hashable
 import System.Posix
+import System.Directory.Extra
 import Control.Monad.Extra
 import Data.Function.Slip
 
@@ -11,12 +12,13 @@ type ObjID = Int
 type Content = ByteString
 
 store :: Bucket -> ObjID -> B.ByteString -> IO ()
-store bucket obj content =  whenM (isDuplicate bucket content) store
-                            <> ref
+store bucket obj content =
+    ensureBucketExists bucket <>
+    whenM (isDuplicate bucket content) store <>
+    ref
                 where
                 obj_paths = path bucket obj
                 storage = data_path bucket content
-                obj_link = path
                 store = B.writeFile storage content
                 ref = createLink storage (obj_paths "/objects/")
                       <> createSymbolicLink storage  (obj_paths "/refs/")
@@ -45,3 +47,7 @@ isDuplicate =  ((.) . (.)) fileExist data_path
 
 path ::  Bucket -> ObjID -> String -> FilePath
 path b obj what =  b <> what <> show obj
+
+ensureBucketExists bucket = foldMap (
+                                createDirectoryIfMissing True . (bucket <>))
+                                ["refs", "objects", "store"]
