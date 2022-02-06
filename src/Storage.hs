@@ -3,7 +3,7 @@ module Storage where
 import Data.ByteString as B
 import Data.Hashable
 import System.Posix
-import Data.Bool.HT
+import Control.Monad.Extra
 import Data.Function.Slip
 
 type Bucket = String
@@ -11,9 +11,7 @@ type ObjID = Int
 type Content = ByteString
 
 store :: Bucket -> ObjID -> B.ByteString -> IO ()
-store bucket obj content = if' <$> isDuplicate bucket content
-                                <*> store
-                                <*> pure ()
+store bucket obj content =  whenM (isDuplicate bucket content) store
                             <> ref
                 where
                 obj_paths = path bucket obj
@@ -27,9 +25,7 @@ retrieve :: Bucket -> ObjID -> IO ByteString
 retrieve = ((.) . (.)) B.readFile (slipl path "/objects/")
 
 delete :: Bucket -> ObjID -> IO ()
-delete bucket obj = if' <$> ((>= 2) <$> exemplarOf bucket obj)
-                        <*> unstore
-                        <*> pure ()
+delete bucket obj = whenM ((>= 2) <$> exemplarOf bucket obj) unstore
                        <> unref
                 where
                 obj_paths = path bucket obj
