@@ -1,21 +1,23 @@
 module Main where
 
 import Api
+import Storage as O
 
 import Servant
 import Network.Wai.Handler.Warp
+import Control.Monad.IO.Class
 import Data.ByteString
-import Data.Bool.HT
 
 server :: Server ObjectStore
-server x i = put_object :<|> get_object :<|> delete_object
+server x i = put :<|> get :<|> delete
     where
-    y = "test"
-    put_object _ = return $ x <> y <> show i
+    object_path =  x <> "/" <> show i
 
-    get_object = return $ x <> show i
+    put object_data = (liftIO . O.store object_path) object_data *> pure NoContent
 
-    delete_object = i < 50 ?: (return NoContent, throwError err404)
+    get = liftIO . O.retrieve $ object_path
+
+    delete = (liftIO . O.delete) object_path *> pure NoContent
 
 objectApi :: Proxy ObjectStore
 objectApi = Proxy

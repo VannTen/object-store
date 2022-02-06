@@ -16,10 +16,12 @@ dependencies:
 - servant < 0.20
 - warp
 - bytestring
-- utility-ht
+- hashable < 2
 
 library:
   source-dirs: src
+  dependencies:
+    - unix
 
 executables:
   object-store-exe:
