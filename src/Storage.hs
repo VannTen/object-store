@@ -36,6 +36,10 @@ delete bucket obj = whenM ((>= 2) <$> exemplarOf bucket obj) unstore
                 unstore = readSymbolicLink (obj_paths "/refs/")
                       >>= removeLink
 
+ifObj bucket obj f = whenMaybeM
+                        (fileExist $ path bucket obj "/buckets/") $
+                        f bucket obj
+
 data_path :: Bucket -> Content -> FilePath
 data_path bucket content = bucket <> "/store/" <> (show . hash) content
 
