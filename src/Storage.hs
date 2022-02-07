@@ -22,31 +22,36 @@ store bucket obj content =
                 storage = data_path bucket content
                 store = B.writeFile storage content
                 ref = createLink storage (obj_paths "/objects/")
-                      <> createSymbolicLink storage  (obj_paths "/refs/")
-                unref = mconcat $ removeLink . obj_paths <$> ["/objects/", "/refs/"]
+                      <> createSymbolicLink storage (obj_paths "/refs/")
+                unref = removeLink (obj_paths "/objects/")
+                        <> whenM ((== 1) <$> exemplarOf bucket obj)
+                        (unstore $ obj_paths "/refs/")
+
+unstore = removeLink <=< readSymbolicLink
 
 retrieve :: Bucket -> ObjID -> IO ByteString
 retrieve = ((.) . (.)) B.readFile (slipl path "/objects/")
 
 delete :: Bucket -> ObjID -> IO ()
-delete bucket obj = whenM ((>= 2) <$> exemplarOf bucket obj) unstore
+delete bucket obj = whenM ((>= 2) <$> exemplarOf bucket obj) (unstore data_ref)
                        <> unref
                 where
                 obj_paths = path bucket obj
+                data_ref = obj_paths "/refs/"
                 unref = removeLink (obj_paths "/objects/")
-                     <> removeLink (obj_paths "/refs/")
-                unstore = readSymbolicLink (obj_paths "/refs/")
-                      >>= removeLink
+                     <> removeLink data_ref
 
 ifObj bucket obj f = whenMaybeM
-                        (fileExist $ path bucket obj "/buckets/") $
+                        (fileExist $ path bucket obj "/objects/") $
                         f bucket obj
 
 data_path :: Bucket -> Content -> FilePath
 data_path bucket content = bucket <> "/store/" <> (show . hash) content
 
 exemplarOf :: Bucket -> ObjID -> IO LinkCount
-exemplarOf b i = fmap linkCount $ getFileStatus $ b <> "/refs/" <> show i
+exemplarOf b i = fmap linkCount $
+                 getFileStatus <=< readSymbolicLink $
+                 b <> "/refs/" <> show i
 
 isDuplicate :: Bucket -> Content -> IO Bool
 isDuplicate =  ((.) . (.)) fileExist data_path
