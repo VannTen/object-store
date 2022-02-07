@@ -14,7 +14,8 @@ type Content = ByteString
 store :: Bucket -> ObjID -> B.ByteString -> IO ()
 store bucket obj content =
     ensureBucketExists bucket <>
-    whenM (isDuplicate bucket content) store <>
+    whenM (not <$> isDuplicate bucket content) store <>
+    whenM (fileExist $ path bucket obj "/objects/") unref <>
     ref
                 where
                 obj_paths = path bucket obj
@@ -22,6 +23,7 @@ store bucket obj content =
                 store = B.writeFile storage content
                 ref = createLink storage (obj_paths "/objects/")
                       <> createSymbolicLink storage  (obj_paths "/refs/")
+                unref = mconcat $ removeLink . obj_paths <$> ["/objects/", "/refs/"]
 
 retrieve :: Bucket -> ObjID -> IO ByteString
 retrieve = ((.) . (.)) B.readFile (slipl path "/objects/")
@@ -54,4 +56,4 @@ path b obj what =  b <> what <> show obj
 
 ensureBucketExists bucket = foldMap (
                                 createDirectoryIfMissing True . (bucket <>))
-                                ["refs", "objects", "store"]
+                                ["/refs/", "/objects/", "/store/"]

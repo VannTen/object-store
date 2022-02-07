@@ -6,7 +6,6 @@ import Storage as O
 import Servant
 import Network.Wai.Handler.Warp
 import Control.Monad.IO.Class
-import Control.Exception
 import Data.ByteString
 import Data.Functor
 
@@ -21,7 +20,7 @@ server x i = put :<|> get :<|> delete
 
 found :: Maybe a -> Servant.Handler a
 found res = case res of
-        Nothing -> throw err404
+        Nothing -> throwError err404
         Just response -> pure response
 
 objectApi :: Proxy ObjectStore
