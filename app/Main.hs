@@ -21,7 +21,7 @@ server x i = put :<|> get :<|> delete
 
 found :: Maybe a -> Servant.Handler a
 found res = case res of
-        Nothing -> throwError err400
+        Nothing -> throwError err404
         Just response -> pure response
 
 objectApi :: Proxy ObjectStore
