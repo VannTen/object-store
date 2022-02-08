@@ -8,6 +8,7 @@ import Network.Wai.Handler.Warp
 import Control.Monad.IO.Class
 import Data.ByteString
 import Data.Functor
+import Options.Applicative
 
 server :: Server ObjectStore
 server x i = put :<|> get :<|> delete
@@ -29,5 +30,15 @@ objectApi = Proxy
 app :: Application
 app = serve objectApi server
 
+port :: Parser Int
+port = option auto
+                (long "port" <>
+                short 'p' <>
+                metavar "PORT" <>
+                help "Port to bind on" <>
+                value 8080)
+
 main :: IO ()
-main = run 8080 app
+main = do
+    port <- execParser (info (port <**> helper) $ header "Simple object storage server")
+    run port app

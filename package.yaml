@@ -38,3 +38,4 @@ executables:
     - object-store
     - servant-server
     - warp
+    - optparse-applicative
