@@ -1,14 +1,25 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeOperators #-}
 
-module Api where
+module Api
+  ( Id (..),
+    ObjectStore,
+  )
+where
 
-import Servant.API
+import Data.Aeson.Types
 import Data.ByteString
+import GHC.Generics
+import Servant.API
 
+data Id = Id {id :: Int} deriving (Generic)
 
-type ObjectStore = "objects" :> Capture "bucket" String :> Capture "objectID" Int :>
-    ( ReqBody '[OctetStream] ByteString :> Put '[PlainText] NoContent
-    :<|>                             Get '[OctetStream] ByteString
-    :<|> Delete '[PlainText] NoContent
-    )
+instance ToJSON Id
+
+type ObjectStore =
+  "objects" :> Capture "bucket" String :> Capture "objectID" Int
+    :> ( ReqBody '[OctetStream] ByteString :> PutCreated '[JSON] Id
+           :<|> Get '[OctetStream] ByteString
+           :<|> Delete '[PlainText] NoContent
+       )

@@ -13,7 +13,7 @@ import Options.Applicative
 server :: Server ObjectStore
 server x i = put :<|> get :<|> delete
     where
-    put object_data = (liftIO . O.store x i) object_data $> NoContent
+    put object_data = (liftIO . O.store x i) object_data $> Id i
 
     get = liftIO (O.ifObj x i O.retrieve) >>= found
 
@@ -21,7 +21,7 @@ server x i = put :<|> get :<|> delete
 
 found :: Maybe a -> Servant.Handler a
 found res = case res of
-        Nothing -> throwError err404
+        Nothing -> throwError err400
         Just response -> pure response
 
 objectApi :: Proxy ObjectStore

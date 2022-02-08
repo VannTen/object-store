@@ -25,6 +25,7 @@ library:
     - composition
     - composition-extra
     - extra
+    - aeson
 
 executables:
   object-store-exe:
