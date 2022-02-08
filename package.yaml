@@ -28,7 +28,7 @@ library:
     - aeson
 
 executables:
-  object-store-exe:
+  object-store:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
