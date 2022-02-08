@@ -10,7 +10,9 @@ You will need to use
 the Haskell build tools. It might build with Cabal but I did not test with it.
 
 Once that's done, you'll need to run `stack install`, which will fetch all
-necessary depencies and build the executable in `build`.
+necessary dependencies and build the executable in `build`.
+
+You can also directly build and run with `stack run -- <program arguments>`
 
 ## Operation
 
