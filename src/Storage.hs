@@ -43,7 +43,7 @@ retrieve :: Bucket -> ObjID -> IO ByteString
 retrieve = B.readFile .: slipl path "/objects/"
 
 delete :: Bucket -> ObjID -> IO ()
-delete bucket obj = whenM ((>= 2) <$> exemplarOf bucket obj) (unstore data_ref)
+delete bucket obj = whenM ((== 2) <$> exemplarOf bucket obj) (unstore data_ref)
                        <> unref
                 where
                 obj_paths = path bucket obj
