@@ -2,7 +2,7 @@ module Main where
 
 import Api
 import Control.Monad.IO.Class
-import Data.ByteString
+import Data.ByteString ()
 import Data.Functor
 import Network.Wai.Handler.Warp
 import Options.Applicative
@@ -43,4 +43,5 @@ port =
 main :: IO ()
 main = do
   port <- execParser (info (port <**> helper) $ header "Simple object storage server")
+  putStrLn $ "Listening on port " <> show port
   run port app
