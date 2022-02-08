@@ -20,6 +20,8 @@ The server use the filesystem to store its objects.
 It assumes a working environment (good permissions, space left on device) and
 will respond with errors 500 otherwise)
 
+The server will create buckets as directories, in the working directory.
+
 ### API description
 
 Upload object to the service
