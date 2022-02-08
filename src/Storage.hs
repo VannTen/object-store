@@ -33,7 +33,7 @@ store bucket obj content =
     unref =
       removeLink (obj_paths "/objects/")
         <> whenM
-          ((== 1) <$> exemplarOf bucket obj)
+          ((== 1) <$> copiesOf bucket obj)
           (unstore $ obj_paths "/refs/")
         <> removeLink (obj_paths "/refs/")
 
@@ -50,7 +50,7 @@ retrieve = B.readFile .: slipl path "/objects/"
 
 delete :: Bucket -> ObjID -> IO ()
 delete bucket obj =
-  whenM ((== 2) <$> exemplarOf bucket obj) (unstore data_ref)
+  whenM ((== 2) <$> copiesOf bucket obj) (unstore data_ref)
     <> unref
   where
     obj_paths = path bucket obj
@@ -67,8 +67,8 @@ ifObj bucket obj f =
 data_path :: Bucket -> Content -> FilePath
 data_path bucket content = bucket <> "/store/" <> (show . hash) content
 
-exemplarOf :: Bucket -> ObjID -> IO LinkCount
-exemplarOf b i =
+copiesOf :: Bucket -> ObjID -> IO LinkCount
+copiesOf b i =
   fmap linkCount $
     getFileStatus <=< readSymbolicLink $
       b <> "/refs/" <> show i
