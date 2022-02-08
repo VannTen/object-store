@@ -6,6 +6,7 @@ import System.Posix
 import System.Directory.Extra
 import Control.Monad.Extra
 import Data.Function.Slip
+import Data.Composition
 
 type Bucket = String
 type ObjID = Int
@@ -13,11 +14,14 @@ type Content = ByteString
 
 store :: Bucket -> ObjID -> B.ByteString -> IO ()
 store bucket obj content =
+    whenM (not <$> objIdentical bucket obj content) $
     ensureBucketExists bucket <>
-    whenM (not <$> isDuplicate bucket content) store <>
-    whenM (fileExist $ path bucket obj "/objects/") unref <>
+    whenM (not <$> isDup) store <>
+    whenM isOverride unref <>
     ref
                 where
+                isOverride = fileExist $ path bucket obj "/objects/"
+                isDup = (fileExist .: data_path) bucket content
                 obj_paths = path bucket obj
                 storage = data_path bucket content
                 store = B.writeFile storage content
@@ -25,12 +29,18 @@ store bucket obj content =
                       <> createSymbolicLink storage (obj_paths "/refs/")
                 unref = removeLink (obj_paths "/objects/")
                         <> whenM ((== 1) <$> exemplarOf bucket obj)
-                        (unstore $ obj_paths "/refs/")
+                           (unstore $ obj_paths "/refs/")
+                        <> removeLink (obj_paths "/refs/")
+
+
+objIdentical b obj content = fileExist (path b obj "/objects/")
+                                  &&^ fmap (== data_path b content)
+                                      (readSymbolicLink $ path b obj "/refs/")
 
 unstore = removeLink <=< readSymbolicLink
 
 retrieve :: Bucket -> ObjID -> IO ByteString
-retrieve = ((.) . (.)) B.readFile (slipl path "/objects/")
+retrieve = B.readFile .: slipl path "/objects/"
 
 delete :: Bucket -> ObjID -> IO ()
 delete bucket obj = whenM ((>= 2) <$> exemplarOf bucket obj) (unstore data_ref)
@@ -52,9 +62,6 @@ exemplarOf :: Bucket -> ObjID -> IO LinkCount
 exemplarOf b i = fmap linkCount $
                  getFileStatus <=< readSymbolicLink $
                  b <> "/refs/" <> show i
-
-isDuplicate :: Bucket -> Content -> IO Bool
-isDuplicate =  ((.) . (.)) fileExist data_path
 
 path ::  Bucket -> ObjID -> String -> FilePath
 path b obj what =  b <> what <> show obj
